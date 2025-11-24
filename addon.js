@@ -391,7 +391,7 @@ process.on('SIGINT', async () => {
 });
 
 // START SERVER
-const PORT = process.env.PORT || 7000;
+const PORT = process.env.PORT || 10000;
 serveHTTP(builder.getInterface(), { port: PORT });
 
 console.log(`
