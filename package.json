@@ -1,0 +1,29 @@
+{
+  "name": "stremio-an1me-addon",
+  "version": "1.0.0",
+  "description": "Stremio addon for an1me.to anime streaming",
+  "main": "addon.js",
+  "scripts": {
+    "start": "node addon.js",
+    "dev": "nodemon addon.js"
+  },
+  "keywords": [
+    "stremio",
+    "addon",
+    "anime",
+    "an1me"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "chrome-launcher": "^1.2.1",
+    "express": "^4.18.0",
+    "puppeteer": "^24.31.0",
+    "stremio-addon-sdk": "^1.6.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
