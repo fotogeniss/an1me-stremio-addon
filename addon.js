@@ -311,8 +311,8 @@ console.log(`📺 Found ${episodeLinks.length} episodes in grid`);
 
         // Fallback: If no episodes found, create 50 default
 if (totalEpisodes === 0) {
-    totalEpisodes = 50;
-    console.log('⚠️ No episodes detected, using fallback: 50 episodes');
+    totalEpisodes = 25;
+console.log('⚠️ No episodes detected, using fallback: 25 episodes');
 }
 
 if (totalEpisodes > 0 && totalEpisodes <= 500) {
