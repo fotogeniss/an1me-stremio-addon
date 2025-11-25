@@ -305,8 +305,14 @@ builder.defineMetaHandler(async ({ type, id }) => {
             console.log(`✅ Using metadata episodes: ${totalEpisodes}`);
         }
 
-        if (totalEpisodes > 0 && totalEpisodes <= 500) {
-            for (let i = 1; i <= totalEpisodes; i++) {
+        // Fallback: If no episodes found, create 50 default
+if (totalEpisodes === 0) {
+    totalEpisodes = 50;
+    console.log('⚠️ No episodes detected, using fallback: 50 episodes');
+}
+
+if (totalEpisodes > 0 && totalEpisodes <= 500) {
+    for (let i = 1; i <= totalEpisodes; i++) {
                 videos.push({
                     id: `an1me:${slug}:1:${i}`,
                     title: `Episode ${i}`,
