@@ -278,7 +278,11 @@ builder.defineMetaHandler(async ({ type, id }) => {
                 });
             }
         });
-        
+
+        // DEBUG: Print the HTML to see what's there
+console.log('🔍 HTML snippet:', $.html('#episodeGrid').substring(0, 500));
+
+console.log(`📺 Found ${episodeLinks.length} episodes in grid`);
         console.log(`📺 Found ${episodeLinks.length} episodes in grid`);
         
         // METHOD 2: Try to get from metadata
