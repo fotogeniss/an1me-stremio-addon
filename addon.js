@@ -1,4 +1,4 @@
-// Stremio An1me.to Addon - PUPPETEER VERSION
+// Stremio An1me.to Addon - FIXED EPISODE DETECTION
 const { addonBuilder, serveHTTP } = require('stremio-addon-sdk');
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -6,7 +6,7 @@ const puppeteer = require('puppeteer');
 
 const manifest = {
     id: 'community.an1me.to',
-    version: '2.0.0',
+    version: '2.1.0',
     name: 'An1me.to Advanced',
     description: 'Ελληνικά anime από το an1me.to με Puppeteer',
     resources: ['catalog', 'meta', 'stream'],
@@ -71,7 +71,8 @@ function extractAnimeSlug(link) {
     if (link.includes('/watch/')) {
         return link.split('/watch/')[1]?.split('-episode-')[0];
     } else if (link.includes('/anime/')) {
-        return link.split('/anime/')[1]?.replace('/', '');
+        const slug = link.split('/anime/')[1]?.replace(/\/+$/, '');
+        return slug;
     }
     return null;
 }
@@ -222,7 +223,7 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
     }
 });
 
-// META
+// META - FIXED EPISODE DETECTION
 builder.defineMetaHandler(async ({ type, id }) => {
     console.log('📄 Meta request:', id);
 
@@ -231,9 +232,10 @@ builder.defineMetaHandler(async ({ type, id }) => {
     }
 
     try {
-        const slug = id.replace('an1me:', '');
+        const slug = id.replace('an1me:', '').replace(/\/+$/, '');
         const animeUrl = `${BASE_URL}/anime/${slug}/`;
         
+        console.log(`🔍 Fetching: ${animeUrl}`);
         const html = await fetchPage(animeUrl);
         if (!html) {
             return { 
@@ -263,17 +265,45 @@ builder.defineMetaHandler(async ({ type, id }) => {
         const rating = $('.text-yellow-400').parent().text().trim();
 
         const videos = [];
-        let totalEpisodes = 0;
         
+        // METHOD 1: Count episodes from grid
+        const episodeLinks = [];
+        $('#episodeGrid a[href*="/watch/"]').each((i, el) => {
+            const href = $(el).attr('href');
+            const dataSearch = $(el).attr('data-search');
+            if (href && dataSearch) {
+                episodeLinks.push({
+                    number: parseInt(dataSearch),
+                    url: href
+                });
+            }
+        });
+        
+        console.log(`📺 Found ${episodeLinks.length} episodes in grid`);
+        
+        // METHOD 2: Try to get from metadata
+        let metadataEpisodes = 0;
         $('dl div').each((i, el) => {
             const $el = $(el);
             const label = $el.find('dt').text().trim();
             const value = $el.find('dd').text().trim();
             
             if (label === 'Episodes' && value && value !== 'N/A') {
-                totalEpisodes = parseInt(value);
+                metadataEpisodes = parseInt(value);
             }
         });
+        
+        // Use whichever method gives us episodes
+        let totalEpisodes = 0;
+        
+        if (episodeLinks.length > 0) {
+            // Get max episode number from grid
+            totalEpisodes = Math.max(...episodeLinks.map(e => e.number));
+            console.log(`✅ Using grid episodes: ${totalEpisodes}`);
+        } else if (metadataEpisodes > 0) {
+            totalEpisodes = metadataEpisodes;
+            console.log(`✅ Using metadata episodes: ${totalEpisodes}`);
+        }
 
         if (totalEpisodes > 0 && totalEpisodes <= 500) {
             for (let i = 1; i <= totalEpisodes; i++) {
@@ -332,14 +362,15 @@ builder.defineStreamHandler(async ({ type, id }) => {
         const parts = id.split(':');
         
         if (parts.length < 4) {
+            console.log('❌ Invalid ID format');
             return { streams: [] };
         }
 
-        const slug = parts[1];
+        const slug = parts[1].replace(/\/+$/, '');
         const episode = parts[3];
         
         const episodeUrl = `${BASE_URL}/watch/${slug}-episode-${episode}/`;
-        console.log(`📺 Episode: ${slug} - ${episode}`);
+        console.log(`📺 Episode URL: ${episodeUrl}`);
         
         // Extract video URL with Puppeteer
         const videoUrl = await extractVideoUrl(episodeUrl);
@@ -372,10 +403,14 @@ builder.defineStreamHandler(async ({ type, id }) => {
     } catch (error) {
         console.error('❌ Stream error:', error);
         
+        const parts = id.split(':');
+        const slug = parts[1]?.replace(/\/+$/, '') || 'unknown';
+        const episode = parts[3] || '1';
+        
         return {
             streams: [{
                 name: 'An1me.to - Watch in Browser',
-                externalUrl: `${BASE_URL}/watch/${id.split(':')[1]}-episode-${id.split(':')[3]}/`
+                externalUrl: `${BASE_URL}/watch/${slug}-episode-${episode}/`
             }]
         };
     }
@@ -396,11 +431,11 @@ serveHTTP(builder.getInterface(), { port: PORT, host: '0.0.0.0' });
 
 console.log(`
 ╔════════════════════════════════════════════╗
-║  🚀 An1me.to - PUPPETEER VERSION          ║
+║  🚀 An1me.to - PUPPETEER VERSION v2.1     ║
 ╠════════════════════════════════════════════╣
-║  📺 http://127.0.0.1:${PORT}/manifest.json   ║
+║  📺 http://0.0.0.0:${PORT}/manifest.json      ║
 ║                                            ║
-║  ⚡ Puppeteer extraction enabled          ║
+║  ⚡ Fixed episode detection               ║
 ║  🎯 Direct + Browser streams              ║
 ╚════════════════════════════════════════════╝
 `);
